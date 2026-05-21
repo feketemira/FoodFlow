@@ -328,31 +328,6 @@ def stock_check():
     flash(f"Stock check completed. New reorder alerts created: {row.CreatedCount}", "success")
     return redirect(url_for("dashboard"))
 
-@app.route("/admin/reorder-alerts/<int:alert_id>/resolve", methods=["POST"])
-def resolve_reorder_alert(alert_id):
-    conn = get_conn()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE dbo.ReorderAlerts
-        SET Status = 'Resolved'
-        WHERE AlertID = ?
-    """, alert_id)
-
-    cursor.execute("""
-        INSERT INTO dbo.OrderLog (OrderID, EventType, Message)
-        VALUES (
-            NULL,
-            'REORDER_ALERT_RESOLVED',
-            'Reorder alert ID ' + CAST(? AS NVARCHAR(20)) + ' was manually resolved.'
-        )
-    """, alert_id)
-
-    conn.commit()
-    conn.close()
-
-    flash("Reorder alert resolved.", "success")
-    return redirect(url_for("dashboard"))
 
 @app.route("/admin/logs")
 def logs():
@@ -375,6 +350,36 @@ def logs():
     conn.close()
 
     return render_template("logs.html", logs=logs)
+
+@app.route("/admin/reorder-alerts/<int:alert_id>/resolve", methods=["POST"])
+def resolve_reorder_alert(alert_id):
+    restock_quantity = float(request.form["restock_quantity"])
+
+    conn = get_conn()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DECLARE @StatusCode INT, @StatusMessage NVARCHAR(255);
+
+        EXEC dbo.sp_resolve_reorder_alert
+            @AlertID = ?,
+            @RestockQuantity = ?,
+            @StatusCode = @StatusCode OUTPUT,
+            @StatusMessage = @StatusMessage OUTPUT;
+
+        SELECT @StatusCode AS StatusCode, @StatusMessage AS StatusMessage;
+    """, alert_id, restock_quantity)
+
+    row = cursor.fetchone()
+    conn.commit()
+    conn.close()
+
+    if row.StatusCode == 0:
+        flash(row.StatusMessage, "success")
+    else:
+        flash(row.StatusMessage, "danger")
+
+    return redirect(url_for("dashboard"))
 
 
 if __name__ == "__main__":
