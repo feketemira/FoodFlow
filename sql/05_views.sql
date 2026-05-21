@@ -20,6 +20,7 @@ SELECT
 FROM dbo.Orders
 GROUP BY Status;
 GO
+
 CREATE OR ALTER VIEW dbo.vw_admin_orders AS
 SELECT
     o.OrderID,
@@ -41,6 +42,7 @@ GROUP BY
     o.OrderDate,
     o.Status,
     o.TotalAmount;
+GO
 
 CREATE OR ALTER VIEW dbo.vw_order_details AS
 SELECT
@@ -57,32 +59,37 @@ FROM dbo.Orders o
 JOIN dbo.Customers c ON c.CustomerID = o.CustomerID
 JOIN dbo.OrderItems oi ON oi.OrderID = o.OrderID
 JOIN dbo.MenuItems mi ON mi.MenuItemID = oi.MenuItemID;
+GO
 
-CREATE OR ALTER VIEW vw_active_orders AS
+CREATE OR ALTER VIEW dbo.vw_active_orders AS
 SELECT
     o.OrderID,
     c.Name AS CustomerName,
     o.OrderDate,
     o.Status,
     o.TotalAmount
-FROM Orders o
-JOIN Customers c ON c.CustomerID = o.CustomerID
+FROM dbo.Orders o
+JOIN dbo.Customers c ON c.CustomerID = o.CustomerID
 WHERE o.Status NOT IN ('Delivered', 'Cancelled');
+GO
 
-CREATE OR ALTER VIEW vw_low_stock_ingredients AS
+CREATE OR ALTER VIEW dbo.vw_low_stock_ingredients AS
 SELECT
     IngredientID,
     Name,
     Unit,
     StockQuantity,
     ReorderLevel
-FROM Ingredients
+FROM dbo.Ingredients
 WHERE StockQuantity <= ReorderLevel;
+GO
 
-CREATE OR ALTER VIEW vw_daily_dashboard AS
+CREATE OR ALTER VIEW dbo.vw_daily_dashboard AS
 SELECT
     CAST(GETDATE() AS DATE) AS ReportDate,
     COUNT(*) AS TodayOrders,
     ISNULL(SUM(TotalAmount), 0) AS TodayRevenue
-FROM Orders
-WHERE CAST(OrderDate AS DATE) = CAST(GETDATE() AS DATE);
+FROM dbo.Orders
+WHERE CAST(OrderDate AS DATE) = CAST(GETDATE() AS DATE)
+  AND Status <> 'Cancelled';
+GO

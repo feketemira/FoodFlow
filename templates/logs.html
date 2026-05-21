@@ -32,6 +32,8 @@
         <span class="badge bg-danger">{{ l.EventType }}</span>
     {% elif l.EventType == "STOCK_CHECK" %}
         <span class="badge bg-warning text-dark">{{ l.EventType }}</span>
+    {% elif l.EventType == "REORDER_ALERT_RESOLVED" %}
+    <span class="badge bg-success">{{ l.EventType }}</span>
     {% else %}
         <span class="badge bg-dark">{{ l.EventType }}</span>
     {% endif %}

@@ -61,7 +61,10 @@ CREATE TABLE OrderLog (
     OldStatus NVARCHAR(30) NULL,
     NewStatus NVARCHAR(30) NULL,
     EventTime DATETIME NOT NULL DEFAULT GETDATE(),
-    Message NVARCHAR(255)
+    Message NVARCHAR(255),
+
+    CONSTRAINT FK_OrderLog_Orders
+        FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
 );
 
 CREATE TABLE ReorderAlerts (

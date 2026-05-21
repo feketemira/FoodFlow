@@ -5,6 +5,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Resolve open alerts where stock is no longer low
+    UPDATE ra
+    SET ra.Status = 'Resolved'
+    FROM dbo.ReorderAlerts ra
+    JOIN dbo.Ingredients i ON i.IngredientID = ra.IngredientID
+    WHERE ra.Status = 'Open'
+      AND i.StockQuantity > i.ReorderLevel;
+
+    -- Create new alerts for currently low-stock ingredients
     INSERT INTO dbo.ReorderAlerts (IngredientID, CurrentStock, ReorderLevel, Status)
     SELECT
         i.IngredientID,

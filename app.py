@@ -31,7 +31,12 @@ def menu():
     cursor = conn.cursor()
 
     menu_items = cursor.execute("""
-        SELECT MenuItemID, Name, Description, Category, Price
+        SELECT 
+            MenuItemID, 
+            Name, 
+            Description, 
+            Category, 
+            CAST(ROUND(Price, 0) AS INT) AS Price
         FROM dbo.MenuItems
         WHERE IsAvailable = 1
         ORDER BY Category, Name
@@ -147,7 +152,13 @@ def admin_orders():
     cursor = conn.cursor()
 
     orders = cursor.execute("""
-        SELECT OrderID, CustomerName, OrderDate, Status, TotalAmount, Items
+        SELECT 
+            OrderID, 
+            CustomerName, 
+        CONVERT(VARCHAR(16), OrderDate, 120) AS OrderDate,
+            Status, 
+            CAST(ROUND(TotalAmount, 0) AS INT) AS TotalAmount,
+            Items
         FROM dbo.vw_admin_orders
         ORDER BY OrderDate DESC
     """).fetchall()
@@ -176,6 +187,18 @@ def update_order_status(order_id):
         """, order_id)
 
         row = cursor.fetchone()
+
+        if row.StatusCode == 0:
+            cursor.execute("""
+                DECLARE @CreatedCount INT;
+
+                EXEC dbo.sp_generate_reorder_alerts
+                    @CreatedCount = @CreatedCount OUTPUT;
+
+                SELECT @CreatedCount AS CreatedCount;
+            """)
+            cursor.fetchone()
+
         conn.commit()
         conn.close()
 
@@ -205,18 +228,28 @@ def dashboard():
     cursor = conn.cursor()
 
     daily = cursor.execute("""
-        SELECT ReportDate, TodayOrders, TodayRevenue
+        SELECT 
+            CONVERT(VARCHAR(10), ReportDate, 120) AS ReportDate,
+            CAST(TodayOrders AS INT) AS TodayOrders,
+            CAST(ROUND(TodayRevenue, 0) AS INT) AS TodayRevenue
         FROM dbo.vw_daily_dashboard
     """).fetchone()
 
     low_stock = cursor.execute("""
-        SELECT Name, Unit, StockQuantity, ReorderLevel
+        SELECT 
+            Name, 
+            Unit, 
+            CAST(ROUND(StockQuantity, 2) AS FLOAT) AS StockQuantity,
+            CAST(ROUND(ReorderLevel, 2) AS FLOAT) AS ReorderLevel
         FROM dbo.vw_low_stock_ingredients
         ORDER BY Name
     """).fetchall()
 
     best_selling = cursor.execute("""
-        SELECT TOP 5 MenuItemName, TotalQuantitySold, TotalRevenue
+        SELECT TOP 5
+            MenuItemName,
+            CAST(TotalQuantitySold AS INT) AS TotalQuantitySold,
+            CAST(ROUND(TotalRevenue, 0) AS INT) AS TotalRevenue
         FROM dbo.vw_best_selling_items
         ORDER BY TotalQuantitySold DESC
     """).fetchall()
@@ -231,13 +264,15 @@ def dashboard():
         SELECT
             ra.AlertID,
             i.Name AS IngredientName,
-            ra.CurrentStock,
-            ra.ReorderLevel,
-            ra.CreatedAt,
+            CAST(ROUND(ra.CurrentStock, 2) AS FLOAT) AS CurrentStock,
+            CAST(ROUND(ra.ReorderLevel, 2) AS FLOAT) AS ReorderLevel,
+            CONVERT(VARCHAR(16), ra.CreatedAt, 120) AS CreatedAt,
             ra.Status
         FROM dbo.ReorderAlerts ra
         JOIN dbo.Ingredients i ON i.IngredientID = ra.IngredientID
-        ORDER BY ra.CreatedAt DESC
+        ORDER BY
+            CASE WHEN ra.Status = 'Open' THEN 0 ELSE 1 END,
+            ra.CreatedAt DESC
     """).fetchall()
 
     conn.close()
@@ -272,6 +307,31 @@ def stock_check():
     flash(f"Stock check completed. New reorder alerts created: {row.CreatedCount}", "success")
     return redirect(url_for("dashboard"))
 
+@app.route("/admin/reorder-alerts/<int:alert_id>/resolve", methods=["POST"])
+def resolve_reorder_alert(alert_id):
+    conn = get_conn()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE dbo.ReorderAlerts
+        SET Status = 'Resolved'
+        WHERE AlertID = ?
+    """, alert_id)
+
+    cursor.execute("""
+        INSERT INTO dbo.OrderLog (OrderID, EventType, Message)
+        VALUES (
+            NULL,
+            'REORDER_ALERT_RESOLVED',
+            'Reorder alert ID ' + CAST(? AS NVARCHAR(20)) + ' was manually resolved.'
+        )
+    """, alert_id)
+
+    conn.commit()
+    conn.close()
+
+    flash("Reorder alert resolved.", "success")
+    return redirect(url_for("dashboard"))
 
 @app.route("/admin/logs")
 def logs():
@@ -285,7 +345,7 @@ def logs():
             EventType,
             OldStatus,
             NewStatus,
-            EventTime,
+            CONVERT(VARCHAR(16), EventTime, 120) AS EventTime,
             Message
         FROM dbo.OrderLog
         ORDER BY EventTime DESC

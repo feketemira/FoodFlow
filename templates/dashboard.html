@@ -122,10 +122,11 @@
     <thead class="table-dark">
         <tr>
             <th>Ingredient</th>
-            <th>Current stock</th>
+            <th>Stock at alert</th>
             <th>Reorder level</th>
             <th>Created at</th>
             <th>Status</th>
+            <th style="width: 160px;">Action</th>
         </tr>
     </thead>
 
@@ -139,16 +140,25 @@
             <td>
                 {% if alert.Status == "Open" %}
                     <span class="badge bg-warning text-dark">{{ alert.Status }}</span>
-                {% elif alert.Status == "Closed" %}
+                {% elif alert.Status == "Resolved" %}
                     <span class="badge bg-success">{{ alert.Status }}</span>
                 {% else %}
                     <span class="badge bg-secondary">{{ alert.Status }}</span>
                 {% endif %}
             </td>
+            <td>
+                {% if alert.Status == "Open" %}
+                <form method="post" action="/admin/reorder-alerts/{{ alert.AlertID }}/resolve">
+                    <button class="btn btn-sm btn-success">Resolve</button>
+                </form>
+                {% else %}
+                    <span class="text-muted">No action</span>
+                {% endif %}
+            </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="5" class="text-muted text-center">
+            <td colspan="6" class="text-muted text-center">
                 No reorder alerts have been created yet.
             </td>
         </tr>
