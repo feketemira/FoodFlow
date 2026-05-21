@@ -175,20 +175,29 @@ def update_order_status(order_id):
     cursor = conn.cursor()
 
     if new_status == "Cancelled":
-        cursor.execute("""
-            DECLARE @StatusCode INT, @StatusMessage NVARCHAR(255);
+        try:
+            cursor.execute("BEGIN TRANSACTION;")
 
-            EXEC dbo.sp_cancel_order
-                @OrderID = ?,
-                @StatusCode = @StatusCode OUTPUT,
-                @StatusMessage = @StatusMessage OUTPUT;
+            cursor.execute("""
+                DECLARE @StatusCode INT, @StatusMessage NVARCHAR(255);
 
-            SELECT @StatusCode AS StatusCode, @StatusMessage AS StatusMessage;
-        """, order_id)
+                EXEC dbo.sp_cancel_order
+                    @OrderID = ?,
+                    @StatusCode = @StatusCode OUTPUT,
+                    @StatusMessage = @StatusMessage OUTPUT;
 
-        row = cursor.fetchone()
+                SELECT @StatusCode AS StatusCode, @StatusMessage AS StatusMessage;
+            """, order_id)
 
-        if row.StatusCode == 0:
+            row = cursor.fetchone()
+
+            if row.StatusCode != 0:
+                cursor.execute("ROLLBACK TRANSACTION;")
+                conn.rollback()
+                conn.close()
+                flash(row.StatusMessage, "danger")
+                return redirect(url_for("admin_orders"))
+
             cursor.execute("""
                 DECLARE @CreatedCount INT;
 
@@ -199,15 +208,27 @@ def update_order_status(order_id):
             """)
             cursor.fetchone()
 
-        conn.commit()
-        conn.close()
+            cursor.execute("COMMIT TRANSACTION;")
+            conn.commit()
+            conn.close()
 
-        if row.StatusCode == 0:
             flash(row.StatusMessage, "success")
-        else:
-            flash(row.StatusMessage, "danger")
+            return redirect(url_for("admin_orders"))
 
-        return redirect(url_for("admin_orders"))
+        except Exception as e:
+            try:
+                cursor.execute("ROLLBACK TRANSACTION;")
+            except:
+                pass
+
+            try:
+                conn.rollback()
+            except:
+                pass
+
+            conn.close()
+            flash(f"Order cancellation failed: {str(e)}", "danger")
+            return redirect(url_for("admin_orders"))
 
     cursor.execute("""
         UPDATE dbo.Orders
