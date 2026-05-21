@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">System Logs</h2>
+
+<table class="table table-sm table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Time</th>
+            <th>Order ID</th>
+            <th>Event</th>
+            <th>Old status</th>
+            <th>New status</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for l in logs %}
+        <tr>
+            <td>{{ l.EventTime }}</td>
+            <td>{{ l.OrderID }}</td>
+            <td>
+    {% if l.EventType == "ORDER_CREATED" %}
+        <span class="badge bg-primary">{{ l.EventType }}</span>
+    {% elif l.EventType == "ORDER_ITEM_ADDED" %}
+        <span class="badge bg-info text-dark">{{ l.EventType }}</span>
+    {% elif l.EventType == "STATUS_CHANGED" %}
+        <span class="badge bg-secondary">{{ l.EventType }}</span>
+    {% elif l.EventType == "ORDER_CANCELLED" %}
+        <span class="badge bg-danger">{{ l.EventType }}</span>
+    {% elif l.EventType == "STOCK_CHECK" %}
+        <span class="badge bg-warning text-dark">{{ l.EventType }}</span>
+    {% else %}
+        <span class="badge bg-dark">{{ l.EventType }}</span>
+    {% endif %}
+</td>
+            <td>{{ l.OldStatus }}</td>
+            <td>{{ l.NewStatus }}</td>
+            <td>{{ l.Message }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

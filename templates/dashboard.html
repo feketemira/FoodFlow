@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">Dashboard</h2>
+
+<form method="post" action="/admin/stock-check" class="mb-4">
+    <button class="btn btn-warning">Run stock check</button>
+</form>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5>Today's orders</h5>
+                <p class="display-6">{{ daily.TodayOrders }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5>Today's revenue</h5>
+                <p class="display-6">{{ daily.TodayRevenue }} HUF</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Low stock ingredients</h3>
+
+<table class="table table-warning table-striped">
+    <thead>
+        <tr>
+            <th>Ingredient</th>
+            <th>Current stock</th>
+            <th>Reorder level</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for i in low_stock %}
+        <tr>
+            <td>{{ i.Name }}</td>
+            <td>{{ i.StockQuantity }} {{ i.Unit }}</td>
+            <td>{{ i.ReorderLevel }} {{ i.Unit }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="3" class="text-muted text-center">
+                No low stock ingredients at the moment.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h3>Best-selling items</h3>
+
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Menu item</th>
+                    <th>Quantity sold</th>
+                    <th>Revenue</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in best_selling %}
+                <tr>
+                    <td>{{ item.MenuItemName }}</td>
+                    <td>{{ item.TotalQuantitySold }}</td>
+                    <td>{{ item.TotalRevenue }} HUF</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-muted text-center">
+                        No sales data yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-6">
+        <h3>Order status summary</h3>
+
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Status</th>
+                    <th>Number of orders</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in status_summary %}
+                <tr>
+                    <td>{{ s.Status }}</td>
+                    <td>{{ s.OrderCount }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-muted text-center">
+                        No orders have been placed yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h3 class="mt-4">Reorder alerts</h3>
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Ingredient</th>
+            <th>Current stock</th>
+            <th>Reorder level</th>
+            <th>Created at</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for alert in reorder_alerts %}
+        <tr>
+            <td>{{ alert.IngredientName }}</td>
+            <td>{{ alert.CurrentStock }}</td>
+            <td>{{ alert.ReorderLevel }}</td>
+            <td>{{ alert.CreatedAt }}</td>
+            <td>
+                {% if alert.Status == "Open" %}
+                    <span class="badge bg-warning text-dark">{{ alert.Status }}</span>
+                {% elif alert.Status == "Closed" %}
+                    <span class="badge bg-success">{{ alert.Status }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ alert.Status }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-muted text-center">
+                No reorder alerts have been created yet.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

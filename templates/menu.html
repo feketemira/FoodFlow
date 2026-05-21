@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">Create Food Order</h2>
+
+<form method="post" action="/order">
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Customer information
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Name</label>
+                    <input
+                        type="text"
+                        name="customer_name"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input
+                        type="email"
+                        name="customer_email"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Phone</label>
+                    <input
+                        type="text"
+                        name="customer_phone"
+                        class="form-control"
+                    >
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Food</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th style="width: 120px;">Quantity</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for item in menu_items %}
+            <tr>
+                <td>{{ item.Name }}</td>
+                <td>{{ item.Category }}</td>
+                <td>{{ item.Description }}</td>
+                <td>{{ item.Price }} HUF</td>
+                <td>
+                    <input
+                        type="number"
+                        name="qty_{{ item.MenuItemID }}"
+                        value="0"
+                        min="0"
+                        class="form-control form-control-sm"
+                    >
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary btn-lg">Submit Order</button>
+
+</form>
+
+{% endblock %}

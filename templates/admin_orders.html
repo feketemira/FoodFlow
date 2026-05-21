@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">Kitchen / Admin Orders</h2>
+
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th style="width: 300px;">Change status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for o in orders %}
+        <tr>
+            <td>{{ o.OrderID }}</td>
+            <td>{{ o.CustomerName }}</td>
+            <td>{{ o.OrderDate }}</td>
+            <td>{{ o.Items }}</td>
+            <td>
+                <span class="badge bg-secondary">{{ o.Status }}</span>
+            </td>
+
+            <td>{{ o.TotalAmount }} HUF</td>
+            <td>
+                <form method="post" action="/admin/orders/{{ o.OrderID }}/status" class="d-flex gap-2">
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="Pending" {% if o.Status == "Pending" %}selected{% endif %}>Pending</option>
+                    <option value="Accepted" {% if o.Status == "Accepted" %}selected{% endif %}>Accepted</option>
+                    <option value="Preparing" {% if o.Status == "Preparing" %}selected{% endif %}>Preparing</option>
+                    <option value="Ready" {% if o.Status == "Ready" %}selected{% endif %}>Ready</option>
+                    <option value="Delivered" {% if o.Status == "Delivered" %}selected{% endif %}>Delivered</option>
+                    <option value="Cancelled" {% if o.Status == "Cancelled" %}selected{% endif %}>Cancelled</option>
+                </select>
+
+                    <button class="btn btn-secondary btn-sm">Update</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
